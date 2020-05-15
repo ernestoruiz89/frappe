@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import frappe
 import subprocess
 import operator
+import json
 import re, datetime, math, time
 import babel.dates
 from babel.core import UnknownLocaleError
@@ -1136,3 +1137,24 @@ def is_subset(list_a, list_b):
 
 def generate_hash(*args, **kwargs):
 	return frappe.generate_hash(*args, **kwargs)
+
+
+@frappe.whitelist()
+def get_coords(doctype, names):
+	'''get list of coordinates in form
+	returns {name: ['latitude', 'longitude']}'''
+
+	if isinstance(names, string_types):
+		names = json.loads(names)
+
+	coords = frappe.db.get_list(doctype, filters={
+		'name': ('in', names)
+	}, fields=['latitude', 'longitude','name as docname'])
+
+	out = frappe._dict()
+	for i in coords:
+		out[i.docname] = out.get(i.docname, [])
+		out[i.docname].append(i.latitude)
+		out[i.docname].append(i.longitude)
+
+	return out
